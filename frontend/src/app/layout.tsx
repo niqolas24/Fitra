@@ -22,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`h-full ${sans.variable}`}>
-      <body className={`${sans.className} h-full min-h-screen bg-[var(--background)] text-[var(--foreground)]`}>
+      <body suppressHydrationWarning className={`${sans.className} h-full min-h-screen bg-[var(--background)] text-[var(--foreground)]`}>
         <Providers>{children}</Providers>
       </body>
     </html>
