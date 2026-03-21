@@ -1,0 +1,14 @@
+# Same app runtime as requirements.txt but without spaCy (not imported by the codebase).
+# Use when Python 3.14 breaks builds or you want a faster install: pip install -r requirements-minimal.txt
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+pydantic==2.8.2
+pydantic-settings==2.4.0
+openai==1.51.0
+pdfplumber==0.11.4
+python-docx==1.1.2
+rapidfuzz==3.9.7
+python-dotenv==1.0.1
+httpx==0.27.2

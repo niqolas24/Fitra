@@ -1,4 +1,7 @@
 # AI Application Copilot — Backend Dependencies
+#
+# Use Python 3.11 or 3.12 (recommended). Python 3.14 is not supported yet by some deps.
+# Faster install without spaCy (unused by this codebase): pip install -r requirements-minimal.txt
 
 # API framework
 fastapi==0.115.0
@@ -9,8 +12,8 @@ python-multipart==0.0.9
 pydantic==2.8.2
 pydantic-settings==2.4.0
 
-# OpenAI
-openai==1.51.0
+# Google Gemini
+google-generativeai==0.8.3
 
 # Resume parsing
 pdfplumber==0.11.4
@@ -18,7 +21,6 @@ python-docx==1.1.2
 
 # NLP / fuzzy matching
 rapidfuzz==3.9.7
-spacy==3.7.6
 
 # Optional: semantic similarity (uncomment if needed)
 # sentence-transformers==3.0.1

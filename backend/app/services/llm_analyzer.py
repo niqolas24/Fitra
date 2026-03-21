@@ -1,6 +1,6 @@
 """
 LLM-based analysis: red flags, tailoring suggestions, and fit explanation.
-Makes two focused OpenAI calls:
+Makes three focused Gemini calls:
   1. Red flag analysis + experience/project sub-scores
   2. Tailoring suggestions + bullet rewrites
   3. Fit explanation (short, uses computed score)
@@ -8,7 +8,8 @@ Makes two focused OpenAI calls:
 
 import json
 import logging
-from openai import AsyncOpenAI
+import asyncio
+import google.generativeai as genai
 
 from app.config import get_settings
 from app.models.schemas import (
@@ -138,6 +139,45 @@ Role: {role_title}"""
 
 
 # ---------------------------------------------------------------------------
+# Helper
+# ---------------------------------------------------------------------------
+
+def _make_model(system_instruction: str, temperature: float = 0.2) -> genai.GenerativeModel:
+    settings = get_settings()
+    genai.configure(api_key=settings.gemini_api_key)
+    return genai.GenerativeModel(
+        model_name=settings.gemini_model,
+        generation_config=genai.GenerationConfig(
+            temperature=temperature,
+            response_mime_type="application/json",
+        ),
+        system_instruction=system_instruction,
+    )
+
+
+def _make_text_model(system_instruction: str, temperature: float = 0.3) -> genai.GenerativeModel:
+    settings = get_settings()
+    genai.configure(api_key=settings.gemini_api_key)
+    return genai.GenerativeModel(
+        model_name=settings.gemini_model,
+        generation_config=genai.GenerationConfig(
+            temperature=temperature,
+        ),
+        system_instruction=system_instruction,
+    )
+
+
+async def _call_gemini(model: genai.GenerativeModel, prompt: str, timeout: int) -> str:
+    response = await asyncio.wait_for(
+        asyncio.get_event_loop().run_in_executor(
+            None, lambda: model.generate_content(prompt)
+        ),
+        timeout=timeout,
+    )
+    return response.text
+
+
+# ---------------------------------------------------------------------------
 # LLM call functions
 # ---------------------------------------------------------------------------
 
@@ -146,10 +186,13 @@ async def analyze_red_flags(
     jd_summary: JDSummary,
 ) -> LLMRedFlagResult:
     """
-    Call LLM to identify red flags and score experience/project alignment.
+    Call Gemini to identify red flags and score experience/project alignment.
     """
     settings = get_settings()
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    model = _make_model(
+        system_instruction="You are a precise resume analysis engine. Always return valid JSON only.",
+        temperature=0.2,
+    )
 
     key_requirements = ", ".join(
         jd_summary.required_skills[:8] + jd_summary.technical_tools[:5]
@@ -160,30 +203,16 @@ async def analyze_red_flags(
         key_requirements=key_requirements,
         experience_criteria=jd_summary.experience_alignment_criteria or "Not specified",
         project_criteria=jd_summary.project_relevance_criteria or "Not specified",
-        resume_text=resume_text[:4000],  # Trim to avoid token limits
+        resume_text=resume_text[:4000],
     )
 
     try:
-        response = await client.chat.completions.create(
-            model=settings.openai_model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a precise resume analysis engine. Always return valid JSON only.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.2,
-            response_format={"type": "json_object"},
-            timeout=settings.openai_timeout_seconds,
-        )
-
-        data = json.loads(response.choices[0].message.content)
+        raw = await _call_gemini(model, prompt, settings.gemini_timeout_seconds)
+        data = json.loads(raw)
         return LLMRedFlagResult(**data)
 
     except Exception as e:
         logger.error(f"Red flag analysis failed: {e}")
-        # Return safe defaults on failure
         return LLMRedFlagResult(
             experience_alignment_score=50,
             project_relevance_score=50,
@@ -197,10 +226,16 @@ async def generate_tailoring_suggestions(
     missing_keywords: list[str],
 ) -> LLMTailoringResult:
     """
-    Call LLM to generate truthful tailoring suggestions and bullet rewrites.
+    Call Gemini to generate truthful tailoring suggestions and bullet rewrites.
     """
     settings = get_settings()
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    model = _make_model(
+        system_instruction=(
+            "You are an expert career coach. Always return valid JSON only. "
+            "Never invent experience. All suggestions must be grounded in the resume."
+        ),
+        temperature=0.4,
+    )
 
     prompt = TAILORING_PROMPT.format(
         missing_keywords=", ".join(missing_keywords[:15]),
@@ -211,24 +246,8 @@ async def generate_tailoring_suggestions(
     )
 
     try:
-        response = await client.chat.completions.create(
-            model=settings.openai_model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an expert career coach. Always return valid JSON only. "
-                        "Never invent experience. All suggestions must be grounded in the resume."
-                    ),
-                },
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.4,
-            response_format={"type": "json_object"},
-            timeout=settings.openai_timeout_seconds,
-        )
-
-        data = json.loads(response.choices[0].message.content)
+        raw = await _call_gemini(model, prompt, settings.gemini_timeout_seconds)
+        data = json.loads(raw)
         return LLMTailoringResult(**data)
 
     except Exception as e:
@@ -248,7 +267,10 @@ async def generate_fit_explanation(
 ) -> str:
     """Generate a plain-text fit explanation paragraph."""
     settings = get_settings()
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    model = _make_text_model(
+        system_instruction="You write concise, honest fit summaries. Plain text only.",
+        temperature=0.3,
+    )
 
     label_display_map = {
         "strong_fit": "Strong Fit",
@@ -271,19 +293,8 @@ async def generate_fit_explanation(
     )
 
     try:
-        response = await client.chat.completions.create(
-            model=settings.openai_model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You write concise, honest fit summaries. Plain text only.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.3,
-            timeout=settings.openai_timeout_seconds,
-        )
-        return response.choices[0].message.content.strip()
+        raw = await _call_gemini(model, prompt, settings.gemini_timeout_seconds)
+        return raw.strip()
 
     except Exception as e:
         logger.error(f"Fit explanation generation failed: {e}")

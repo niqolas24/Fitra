@@ -1,11 +1,12 @@
 """
 LLM-based structured extraction from the job description.
-Calls OpenAI once to get a fully structured JD analysis.
+Calls Gemini once to get a fully structured JD analysis.
 """
 
 import json
 import logging
-from openai import AsyncOpenAI
+import asyncio
+import google.generativeai as genai
 
 from app.config import get_settings
 from app.models.schemas import JDSummary
@@ -47,30 +48,32 @@ JOB DESCRIPTION:
 
 async def extract_job_description(job_description: str) -> JDSummary:
     """
-    Call the LLM to extract structured data from a job description.
+    Call Gemini to extract structured data from a job description.
     Returns a validated JDSummary object.
     """
     settings = get_settings()
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    genai.configure(api_key=settings.gemini_api_key)
+
+    model = genai.GenerativeModel(
+        model_name=settings.gemini_model,
+        generation_config=genai.GenerationConfig(
+            temperature=0.1,
+            response_mime_type="application/json",
+        ),
+        system_instruction="You are a precise JSON extraction engine. Always return valid JSON only.",
+    )
 
     prompt = JD_EXTRACTION_PROMPT.format(job_description=job_description)
 
     try:
-        response = await client.chat.completions.create(
-            model=settings.openai_model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a precise JSON extraction engine. Always return valid JSON only.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.1,  # Low temp for consistent structured extraction
-            response_format={"type": "json_object"},
-            timeout=settings.openai_timeout_seconds,
+        response = await asyncio.wait_for(
+            asyncio.get_event_loop().run_in_executor(
+                None, lambda: model.generate_content(prompt)
+            ),
+            timeout=settings.gemini_timeout_seconds,
         )
 
-        raw_json = response.choices[0].message.content
+        raw_json = response.text
         data = json.loads(raw_json)
         return JDSummary(**data)
 
