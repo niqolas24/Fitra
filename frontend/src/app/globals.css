@@ -4,15 +4,34 @@
 
 @layer base {
   :root {
-    --score-strong: #22c55e;
-    --score-moderate: #f59e0b;
-    --score-weak: #ef4444;
+    --background: #07070a;
+    --foreground: #f4f4f5;
+    --card: #0c0c10;
+    --muted: #18181f;
+    --muted-foreground: #a1a1aa;
+    --primary: #8b5cf6;
+    --primary-hover: #7c3aed;
+    --primary-foreground: #fafafa;
+    --ring: rgba(139, 92, 246, 0.45);
+    --score-strong: #34d399;
+    --score-moderate: #fbbf24;
+    --score-weak: #f87171;
+  }
+
+  body {
+    @apply antialiased;
+    background-color: var(--background);
+    color: var(--foreground);
   }
 }
 
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: #374151 transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+  }
+
+  .glass-panel {
+    @apply rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl shadow-xl shadow-black/25;
   }
 }

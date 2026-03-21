@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { Providers } from "@/components/providers";
 
-const inter = Inter({ subsets: ["latin"] });
+const sans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "AI Application Copilot",
+  title: "Fitra — AI Application Copilot",
   description:
-    "Compare your resume against any job description. Get a fit score, keyword analysis, and tailored suggestions.",
+    "Upload your resume, paste any job description, and get fit scores, keywords, ATS checks, and tailored suggestions.",
 };
 
 export default function RootLayout({
@@ -16,9 +21,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
-      <body className={`${inter.className} h-full bg-gray-950 text-gray-100`}>
-        {children}
+    <html lang="en" className={`h-full ${sans.variable}`}>
+      <body className={`${sans.className} h-full min-h-screen bg-[var(--background)] text-[var(--foreground)]`}>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

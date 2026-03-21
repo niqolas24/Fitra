@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Allow images from any domain (for potential avatar/logo usage)
+  output: "standalone",
   images: {
     remotePatterns: [],
   },

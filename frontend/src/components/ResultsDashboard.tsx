@@ -11,8 +11,7 @@ interface ResultsDashboardProps {
 
 export default function ResultsDashboard({ result }: ResultsDashboardProps) {
   return (
-    <div className="space-y-5">
-      {/* 1. Fit score — always first, most important */}
+    <div className="space-y-6 sm:space-y-8">
       <FitScoreCard
         score={result.fit_score}
         label={result.fit_label}
@@ -20,28 +19,25 @@ export default function ResultsDashboard({ result }: ResultsDashboardProps) {
         breakdown={result.score_breakdown}
       />
 
-      {/* 2. Keyword analysis */}
       <KeywordPanel
         keywords={result.keywords}
         matchedCount={result.matched_count}
         missingCount={result.missing_count}
       />
 
-      {/* 3-4: Red flags + ATS (side by side on wide screens) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 items-stretch">
         <RedFlagsPanel redFlags={result.red_flags} />
         <ATSWarningsPanel warnings={result.ats_warnings} />
       </div>
 
-      {/* 5. Tailoring suggestions */}
       <TailoringPanel suggestions={result.tailoring_suggestions} />
 
-      {/* 6. Meta info */}
-      <div className="flex items-center justify-between text-xs text-gray-600 border-t border-gray-800 pt-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-white/35 border-t border-white/[0.06] pt-6">
         <span>
-          Role: <span className="text-gray-500">{result.jd_summary.role_title}</span>
+          Role focus:{" "}
+          <span className="text-white/55">{result.jd_summary.role_title}</span>
         </span>
-        <span>Analyzed in {(result.processing_time_ms / 1000).toFixed(1)}s</span>
+        <span className="tabular-nums">Analyzed in {(result.processing_time_ms / 1000).toFixed(1)}s</span>
       </div>
     </div>
   );

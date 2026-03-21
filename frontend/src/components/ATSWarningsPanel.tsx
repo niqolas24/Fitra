@@ -1,4 +1,5 @@
 import { ATSWarning } from "@/types/analysis";
+import { ShieldAlert, ShieldCheck } from "lucide-react";
 
 interface ATSWarningsPanelProps {
   warnings: ATSWarning[];
@@ -6,38 +7,38 @@ interface ATSWarningsPanelProps {
 
 export default function ATSWarningsPanel({ warnings }: ATSWarningsPanelProps) {
   return (
-    <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-white">ATS Formatting Warnings</h3>
-        <span className="text-xs text-gray-500">
-          {warnings.length === 0 ? "No issues found" : `${warnings.length} issue${warnings.length !== 1 ? "s" : ""}`}
+    <div className="rounded-3xl border border-white/[0.08] bg-white/[0.02] p-6 sm:p-7 h-full">
+      <div className="flex items-center justify-between gap-3 mb-5">
+        <div className="flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-orange-500/20 bg-orange-500/10">
+            <ShieldAlert className="h-4 w-4 text-orange-300/90" />
+          </span>
+          <h3 className="font-semibold text-white tracking-tight">ATS &amp; format</h3>
+        </div>
+        <span className="text-xs text-white/40">
+          {warnings.length === 0
+            ? "Clean pass"
+            : `${warnings.length} issue${warnings.length !== 1 ? "s" : ""}`}
         </span>
       </div>
 
       {warnings.length === 0 ? (
-        <div className="flex items-center gap-2 text-green-400 text-sm">
-          <span>✓</span>
-          <span>No ATS formatting issues detected.</span>
+        <div className="flex items-center gap-2 text-emerald-400/90 text-sm">
+          <ShieldCheck className="h-4 w-4 shrink-0" />
+          No major ATS formatting issues detected.
         </div>
       ) : (
         <div className="space-y-3">
           {warnings.map((warning, i) => (
             <div
               key={i}
-              className="rounded-lg border border-orange-800/60 bg-orange-950/20 p-4"
+              className="rounded-2xl border border-orange-500/20 bg-orange-500/[0.06] p-4 transition-colors hover:border-orange-500/30"
             >
-              <div className="flex items-start gap-2 mb-1.5">
-                <span className="text-orange-400 mt-0.5">⚠️</span>
-                <div>
-                  <p className="text-sm text-orange-300 font-medium leading-snug">
-                    {warning.description}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">
-                    <span className="font-medium text-gray-300">Fix: </span>
-                    {warning.suggestion}
-                  </p>
-                </div>
-              </div>
+              <p className="text-sm text-orange-100/90 font-medium leading-snug">{warning.description}</p>
+              <p className="text-xs text-white/50 mt-2 leading-relaxed">
+                <span className="text-white/65 font-medium">Fix: </span>
+                {warning.suggestion}
+              </p>
             </div>
           ))}
         </div>

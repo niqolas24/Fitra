@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { TailoringSuggestion } from "@/types/analysis";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, Copy, Check, PenLine } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TailoringPanelProps {
   suggestions: TailoringSuggestion[];
@@ -25,40 +28,49 @@ function BulletRewriteCard({
   };
 
   return (
-    <div className="bg-gray-900/60 rounded-lg p-4 space-y-3 border border-gray-700/50">
-      {/* Before */}
+    <div className="rounded-2xl border border-white/[0.08] bg-black/20 p-4 space-y-3">
       <div>
-        <p className="text-xs text-gray-500 mb-1.5 font-medium uppercase tracking-wide">
+        <p className="text-[10px] text-white/40 mb-1.5 font-semibold uppercase tracking-widest">
           Original
         </p>
-        <p className="text-sm text-gray-400 leading-relaxed line-through decoration-red-500/50">
+        <p className="text-sm text-white/45 leading-relaxed line-through decoration-white/20">
           {original}
         </p>
       </div>
 
-      {/* Arrow */}
-      <div className="text-gray-600 text-center">↓</div>
-
-      {/* After */}
-      <div>
-        <div className="flex items-start justify-between gap-2 mb-1.5">
-          <p className="text-xs text-green-500 font-medium uppercase tracking-wide">
-            Suggested Rewrite
-          </p>
-          <button
-            onClick={copyRewrite}
-            className="text-xs text-gray-500 hover:text-gray-300 transition-colors flex-shrink-0"
-          >
-            {copied ? "✓ Copied" : "Copy"}
-          </button>
-        </div>
-        <p className="text-sm text-green-300 leading-relaxed">{rewritten}</p>
+      <div className="flex justify-center py-0.5">
+        <div className="h-px w-8 bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
       </div>
 
-      {/* Reason */}
-      <p className="text-xs text-gray-500 italic border-t border-gray-700/50 pt-2">
-        💡 {reason}
-      </p>
+      <div>
+        <div className="flex items-start justify-between gap-2 mb-1.5">
+          <p className="text-[10px] text-emerald-400/90 font-semibold uppercase tracking-widest">
+            Suggested
+          </p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] text-white/45 hover:text-white"
+            onClick={copyRewrite}
+          >
+            {copied ? (
+              <>
+                <Check className="h-3.5 w-3.5" />
+                Copied
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" />
+                Copy
+              </>
+            )}
+          </Button>
+        </div>
+        <p className="text-sm text-emerald-100/90 leading-relaxed">{rewritten}</p>
+      </div>
+
+      <p className="text-xs text-white/40 border-t border-white/[0.06] pt-3 leading-relaxed">{reason}</p>
     </div>
   );
 }
@@ -67,41 +79,44 @@ function SuggestionCard({ suggestion }: { suggestion: TailoringSuggestion }) {
   const [expanded, setExpanded] = useState(true);
 
   return (
-    <div className="rounded-xl border border-gray-700 overflow-hidden">
-      {/* Header */}
+    <div className="rounded-2xl border border-white/[0.08] overflow-hidden bg-white/[0.02]">
       <button
+        type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-4 bg-gray-800/50 hover:bg-gray-800 transition-colors text-left"
+        className="w-full flex items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-white/[0.04]"
       >
-        <div className="flex items-center gap-2">
-          <span className="text-blue-400">◆</span>
-          <span className="font-medium text-white text-sm">{suggestion.area}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <PenLine className="h-4 w-4 text-violet-300/80 shrink-0" />
+          <span className="font-medium text-white text-sm truncate">{suggestion.area}</span>
           {suggestion.bullet_rewrites.length > 0 && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-900/40 border border-blue-700/50 text-blue-400">
-              {suggestion.bullet_rewrites.length} rewrite{suggestion.bullet_rewrites.length !== 1 ? "s" : ""}
+            <span className="text-[10px] px-2 py-0.5 rounded-full border border-violet-500/25 bg-violet-500/10 text-violet-200 shrink-0">
+              {suggestion.bullet_rewrites.length} rewrite
+              {suggestion.bullet_rewrites.length !== 1 ? "s" : ""}
             </span>
           )}
         </div>
-        <span className="text-gray-500 text-sm">{expanded ? "▲" : "▼"}</span>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 text-white/35 shrink-0 transition-transform duration-200",
+            expanded && "rotate-180",
+          )}
+        />
       </button>
 
-      {/* Body */}
       {expanded && (
-        <div className="p-4 space-y-4 bg-gray-900/30">
-          {/* Main suggestion */}
-          <p className="text-sm text-gray-300 leading-relaxed">{suggestion.suggestion}</p>
+        <div className="px-4 pb-4 pt-0 space-y-4 border-t border-white/[0.06]">
+          <p className="text-sm text-white/65 leading-relaxed pt-4">{suggestion.suggestion}</p>
 
-          {/* Keywords to add */}
           {suggestion.keywords_to_add.length > 0 && (
             <div>
-              <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">
-                Keywords to weave in naturally
+              <p className="text-[10px] text-white/40 mb-2 font-semibold uppercase tracking-widest">
+                Keywords to weave in
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {suggestion.keywords_to_add.map((kw, i) => (
                   <span
                     key={i}
-                    className="px-2 py-0.5 rounded-full bg-blue-900/30 border border-blue-700/50 text-blue-300 text-xs"
+                    className="px-2.5 py-1 rounded-full border border-cyan-500/25 bg-cyan-500/10 text-cyan-100/90 text-xs"
                   >
                     {kw}
                   </span>
@@ -110,11 +125,10 @@ function SuggestionCard({ suggestion }: { suggestion: TailoringSuggestion }) {
             </div>
           )}
 
-          {/* Bullet rewrites */}
           {suggestion.bullet_rewrites.length > 0 && (
             <div className="space-y-3">
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-                Bullet Rewrites
+              <p className="text-[10px] text-white/40 font-semibold uppercase tracking-widest">
+                Bullet rewrites
               </p>
               {suggestion.bullet_rewrites.map((rewrite, i) => (
                 <BulletRewriteCard key={i} {...rewrite} />
@@ -129,21 +143,22 @@ function SuggestionCard({ suggestion }: { suggestion: TailoringSuggestion }) {
 
 export default function TailoringPanel({ suggestions }: TailoringPanelProps) {
   return (
-    <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-3xl border border-white/[0.08] bg-white/[0.02] p-6 sm:p-7">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-5">
         <div>
-          <h3 className="font-semibold text-white">Tailoring Suggestions</h3>
-          <p className="text-xs text-gray-500 mt-0.5">
-            All suggestions are grounded in your existing experience — nothing is invented.
+          <h3 className="font-semibold text-white tracking-tight">Tailoring suggestions</h3>
+          <p className="text-xs text-white/40 mt-1 max-w-xl leading-relaxed">
+            Grounded in what you already did — use these to align language with the posting, not to invent
+            experience.
           </p>
         </div>
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-white/35 shrink-0">
           {suggestions.length} area{suggestions.length !== 1 ? "s" : ""}
         </span>
       </div>
 
       {suggestions.length === 0 ? (
-        <p className="text-gray-500 text-sm">No tailoring suggestions generated.</p>
+        <p className="text-white/40 text-sm">No tailoring suggestions for this run.</p>
       ) : (
         <div className="space-y-3">
           {suggestions.map((s, i) => (
