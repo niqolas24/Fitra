@@ -27,4 +27,8 @@ def get_db():
 def init_db():
     """Create tables if they don't exist."""
     if engine:
-        Base.metadata.create_all(bind=engine)
+        try:
+            Base.metadata.create_all(bind=engine)
+        except Exception as e:
+            import logging
+            logging.warning(f"Database initialization failed: {e}. Tables will be created on first use.")
