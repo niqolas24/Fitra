@@ -1,34 +1,29 @@
 "use client";
 
 import { Loader2, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
-interface AnalyzeButtonProps {
-  onClick: () => void;
-  disabled: boolean;
-  loading: boolean;
-}
+interface Props { onClick: () => void; disabled?: boolean; loading?: boolean; }
 
-export default function AnalyzeButton({ onClick, disabled, loading }: AnalyzeButtonProps) {
+export default function AnalyzeButton({ onClick, disabled, loading }: Props) {
   return (
-    <Button
+    <button
       type="button"
-      size="lg"
       onClick={onClick}
-      disabled={disabled}
-      className="min-w-[220px] h-12 px-8 text-[15px] font-semibold shadow-glow"
+      disabled={disabled || loading}
+      className="btn-primary relative overflow-hidden group"
+      style={{ padding: "10px 22px", fontSize: "14px", borderRadius: "12px" }}
     >
+      {/* Shimmer */}
+      <span
+        className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none"
+        style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)" }}
+      />
       {loading ? (
-        <>
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Analyzing…
-        </>
+        <Loader2 className="h-4 w-4 anim-spin" />
       ) : (
-        <>
-          <Sparkles className="h-5 w-5 opacity-90" />
-          Run analysis
-        </>
+        <Sparkles className="h-4 w-4" strokeWidth={1.75} />
       )}
-    </Button>
+      {loading ? "Analyzing…" : "Analyze resume"}
+    </button>
   );
 }

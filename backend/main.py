@@ -9,6 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.routes.analysis import router as analysis_router
+from app.routes.auth import router as auth_router
+from app.db import init_db
 
 logging.basicConfig(
     level=logging.INFO,
@@ -16,6 +18,7 @@ logging.basicConfig(
 )
 
 settings = get_settings()
+init_db()
 
 app = FastAPI(
     title="AI Application Copilot",
@@ -34,6 +37,7 @@ app.add_middleware(
 
 # Register routes
 app.include_router(analysis_router)
+app.include_router(auth_router)
 
 
 @app.get("/")

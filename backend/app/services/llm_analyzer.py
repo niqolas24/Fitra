@@ -1,6 +1,6 @@
 """
 LLM-based analysis: red flags, tailoring suggestions, and fit explanation.
-Makes three focused Gemini calls:
+Makes three focused Groq calls:
   1. Red flag analysis + experience/project sub-scores
   2. Tailoring suggestions + bullet rewrites
   3. Fit explanation (short, uses computed score)
@@ -8,8 +8,7 @@ Makes three focused Gemini calls:
 
 import json
 import logging
-import asyncio
-import google.generativeai as genai
+from groq import AsyncGroq
 
 from app.config import get_settings
 from app.models.schemas import (
@@ -18,10 +17,6 @@ from app.models.schemas import (
 
 logger = logging.getLogger(__name__)
 
-
-# ---------------------------------------------------------------------------
-# Prompt templates
-# ---------------------------------------------------------------------------
 
 RED_FLAG_PROMPT = """You are an expert resume reviewer helping a university student applying for a specific role.
 
@@ -52,10 +47,8 @@ SCORING GUIDE:
 RED FLAG RULES:
 - Only flag REAL issues visible in the resume. Do not invent problems.
 - Be SPECIFIC. Quote or closely reference the actual problematic text.
-  BAD: "Some bullets are vague."
-  GOOD: "The bullet 'Assisted with backend development' uses passive voice and shows no outcome or metric."
 - Flag a MAXIMUM of 8 red flags. Focus on high-severity issues.
-- Do NOT flag missing keywords (that is handled separately by a different system).
+- Do NOT flag missing keywords.
 - Do NOT recommend adding skills the student doesn't have.
 
 JOB DESCRIPTION CONTEXT:
@@ -72,11 +65,6 @@ TAILORING_PROMPT = """You are an expert career coach helping a university studen
 
 CRITICAL CONSTRAINT: You MUST NOT invent, fabricate, or imply experience the student does not have.
 Every suggestion must be grounded in what is ALREADY in their resume.
-
-Your job:
-1. Suggest which existing experiences/projects should be emphasized or repositioned
-2. Rewrite up to 5 specific resume bullets to better align with the job (stronger verbs, clearer outcomes)
-3. Recommend where existing keywords could be naturally added
 
 Return ONLY valid JSON:
 
@@ -97,16 +85,12 @@ Return ONLY valid JSON:
   ]
 }}
 
-RULES FOR BULLET REWRITES:
-- Do NOT add tools, technologies, or claims not in the original text.
+RULES:
+- Do NOT add tools or claims not in the original text.
 - Use stronger action verbs (Built, Engineered, Led, Reduced, Increased, etc.)
-- Add quantification ONLY if context strongly implies a specific number.
-- Format goal: [Strong Verb] + [What] + [How/Tool] + [Result/Impact]
-- Maximum 5 bullet rewrites total across all suggestions.
-- Skip bullets that cannot be honestly improved.
+- Maximum 5 bullet rewrites total.
 
-MISSING KEYWORDS from this job's requirements (that aren't in the resume):
-{missing_keywords}
+MISSING KEYWORDS: {missing_keywords}
 
 JOB DESCRIPTION SUMMARY:
 Role: {role_title}
@@ -123,8 +107,6 @@ Write a clear, honest, direct 3-4 sentence paragraph explaining why this student
 - Mention their specific strengths that match the role
 - Mention the most important gaps
 - Do NOT tell the student whether to apply or not
-- Do NOT be excessively encouraging or discouraging
-- Do NOT use generic phrases like "great candidate" or "needs improvement"
 - Be specific to their actual resume and the actual job
 
 Return ONLY the paragraph text. No JSON, no markdown, no headers.
@@ -138,61 +120,12 @@ Red Flag Count: {red_flag_count} ({high_severity_count} high severity)
 Role: {role_title}"""
 
 
-# ---------------------------------------------------------------------------
-# Helper
-# ---------------------------------------------------------------------------
-
-def _make_model(system_instruction: str, temperature: float = 0.2) -> genai.GenerativeModel:
-    settings = get_settings()
-    genai.configure(api_key=settings.gemini_api_key)
-    return genai.GenerativeModel(
-        model_name=settings.gemini_model,
-        generation_config=genai.GenerationConfig(
-            temperature=temperature,
-            response_mime_type="application/json",
-        ),
-        system_instruction=system_instruction,
-    )
-
-
-def _make_text_model(system_instruction: str, temperature: float = 0.3) -> genai.GenerativeModel:
-    settings = get_settings()
-    genai.configure(api_key=settings.gemini_api_key)
-    return genai.GenerativeModel(
-        model_name=settings.gemini_model,
-        generation_config=genai.GenerationConfig(
-            temperature=temperature,
-        ),
-        system_instruction=system_instruction,
-    )
-
-
-async def _call_gemini(model: genai.GenerativeModel, prompt: str, timeout: int) -> str:
-    response = await asyncio.wait_for(
-        asyncio.get_event_loop().run_in_executor(
-            None, lambda: model.generate_content(prompt)
-        ),
-        timeout=timeout,
-    )
-    return response.text
-
-
-# ---------------------------------------------------------------------------
-# LLM call functions
-# ---------------------------------------------------------------------------
-
 async def analyze_red_flags(
     resume_text: str,
     jd_summary: JDSummary,
 ) -> LLMRedFlagResult:
-    """
-    Call Gemini to identify red flags and score experience/project alignment.
-    """
     settings = get_settings()
-    model = _make_model(
-        system_instruction="You are a precise resume analysis engine. Always return valid JSON only.",
-        temperature=0.2,
-    )
+    client = AsyncGroq(api_key=settings.groq_api_key)
 
     key_requirements = ", ".join(
         jd_summary.required_skills[:8] + jd_summary.technical_tools[:5]
@@ -207,8 +140,20 @@ async def analyze_red_flags(
     )
 
     try:
-        raw = await _call_gemini(model, prompt, settings.gemini_timeout_seconds)
-        data = json.loads(raw)
+        response = await client.chat.completions.create(
+            model=settings.groq_model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a precise resume analysis engine. Always return valid JSON only.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.2,
+            response_format={"type": "json_object"},
+            timeout=settings.groq_timeout_seconds,
+        )
+        data = json.loads(response.choices[0].message.content)
         return LLMRedFlagResult(**data)
 
     except Exception as e:
@@ -225,17 +170,8 @@ async def generate_tailoring_suggestions(
     jd_summary: JDSummary,
     missing_keywords: list[str],
 ) -> LLMTailoringResult:
-    """
-    Call Gemini to generate truthful tailoring suggestions and bullet rewrites.
-    """
     settings = get_settings()
-    model = _make_model(
-        system_instruction=(
-            "You are an expert career coach. Always return valid JSON only. "
-            "Never invent experience. All suggestions must be grounded in the resume."
-        ),
-        temperature=0.4,
-    )
+    client = AsyncGroq(api_key=settings.groq_api_key)
 
     prompt = TAILORING_PROMPT.format(
         missing_keywords=", ".join(missing_keywords[:15]),
@@ -246,8 +182,23 @@ async def generate_tailoring_suggestions(
     )
 
     try:
-        raw = await _call_gemini(model, prompt, settings.gemini_timeout_seconds)
-        data = json.loads(raw)
+        response = await client.chat.completions.create(
+            model=settings.groq_model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert career coach. Always return valid JSON only. "
+                        "Never invent experience. All suggestions must be grounded in the resume."
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.4,
+            response_format={"type": "json_object"},
+            timeout=settings.groq_timeout_seconds,
+        )
+        data = json.loads(response.choices[0].message.content)
         return LLMTailoringResult(**data)
 
     except Exception as e:
@@ -265,12 +216,8 @@ async def generate_fit_explanation(
     project_relevance_score: int,
     red_flags: list,
 ) -> str:
-    """Generate a plain-text fit explanation paragraph."""
     settings = get_settings()
-    model = _make_text_model(
-        system_instruction="You write concise, honest fit summaries. Plain text only.",
-        temperature=0.3,
-    )
+    client = AsyncGroq(api_key=settings.groq_api_key)
 
     label_display_map = {
         "strong_fit": "Strong Fit",
@@ -293,8 +240,19 @@ async def generate_fit_explanation(
     )
 
     try:
-        raw = await _call_gemini(model, prompt, settings.gemini_timeout_seconds)
-        return raw.strip()
+        response = await client.chat.completions.create(
+            model=settings.groq_model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You write concise, honest fit summaries. Plain text only.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.3,
+            timeout=settings.groq_timeout_seconds,
+        )
+        return response.choices[0].message.content.strip()
 
     except Exception as e:
         logger.error(f"Fit explanation generation failed: {e}")

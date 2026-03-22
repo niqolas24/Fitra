@@ -1,117 +1,60 @@
+"use client";
+
 import { RedFlag, RedFlagSeverity } from "@/types/analysis";
-import { AlertTriangle, CircleAlert, Info } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { AlertTriangle, AlertCircle, Info, CheckCircle2 } from "lucide-react";
 
-interface RedFlagsPanelProps {
-  redFlags: RedFlag[];
-}
+interface Props { redFlags: RedFlag[]; }
 
-const SEVERITY_CONFIG: Record<
-  RedFlagSeverity,
-  { label: string; chip: string; icon: typeof AlertTriangle }
-> = {
-  high: {
-    label: "High",
-    chip: "border-red-500/30 bg-red-500/10 text-red-200",
-    icon: CircleAlert,
-  },
-  medium: {
-    label: "Medium",
-    chip: "border-amber-500/30 bg-amber-500/10 text-amber-200",
-    icon: AlertTriangle,
-  },
-  low: {
-    label: "Low",
-    chip: "border-white/15 bg-white/[0.04] text-white/55",
-    icon: Info,
-  },
+const SEV: Record<RedFlagSeverity, { icon: typeof AlertCircle; color: string; bg: string; border: string; label: string }> = {
+  high:   { icon: AlertCircle,   color: "var(--red-600)",   bg: "var(--red-50)",   border: "var(--red-100)",   label: "High" },
+  medium: { icon: AlertTriangle, color: "var(--amber-600)", bg: "var(--amber-50)", border: "var(--amber-100)", label: "Medium" },
+  low:    { icon: Info,          color: "var(--text-secondary)", bg: "var(--bg-subtle)", border: "var(--border)", label: "Low" },
 };
 
-const FLAG_TYPE_LABELS: Record<string, string> = {
-  vague_bullet: "Vague bullet",
-  no_impact_metrics: "No metrics",
-  weak_action_verb: "Weak action verb",
-  inconsistent_tense: "Inconsistent tense",
-  role_mismatch: "Role mismatch",
-  generic_skills_section: "Generic skills",
-  no_outcome_shown: "No outcome",
-  short_tenure_unexplained: "Short tenure",
-  other: "Other",
-};
-
-export default function RedFlagsPanel({ redFlags }: RedFlagsPanelProps) {
-  if (redFlags.length === 0) {
-    return (
-      <div className="rounded-3xl border border-white/[0.08] bg-white/[0.02] p-6 sm:p-7 h-full">
-        <h3 className="font-semibold text-white tracking-tight mb-3">Red flags</h3>
-        <div className="flex items-center gap-2 text-emerald-400/90 text-sm">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-            <Info className="h-4 w-4" />
-          </span>
-          No significant red flags detected.
-        </div>
-      </div>
-    );
-  }
-
-  const highCount = redFlags.filter((f) => f.severity === "high").length;
-  const medCount = redFlags.filter((f) => f.severity === "medium").length;
-
-  const sorted = [...redFlags].sort((a, b) => {
-    const order = { high: 0, medium: 1, low: 2 };
-    return order[a.severity] - order[b.severity];
-  });
+export default function RedFlagsPanel({ redFlags }: Props) {
+  const sorted = [...redFlags].sort((a, b) => ({ high: 0, medium: 1, low: 2 }[a.severity] - { high: 0, medium: 1, low: 2 }[b.severity]));
 
   return (
-    <div className="rounded-3xl border border-white/[0.08] bg-white/[0.02] p-6 sm:p-7 h-full">
-      <div className="flex items-center justify-between gap-3 mb-5">
-        <h3 className="font-semibold text-white tracking-tight">Red flags</h3>
-        <div className="flex items-center gap-2">
-          {highCount > 0 && (
-            <Badge variant="danger" className="text-[10px]">
-              {highCount} high
-            </Badge>
-          )}
-          {medCount > 0 && (
-            <Badge variant="warning" className="text-[10px]">
-              {medCount} medium
-            </Badge>
-          )}
+    <div className="card-lg p-6 sm:p-7 h-full anim-fade-up">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Red flags</h3>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-tertiary)" }}>Issues to address before applying</p>
         </div>
+        {redFlags.length > 0 && <span className="badge badge-red">{redFlags.length} found</span>}
       </div>
 
-      <div className="space-y-3">
-        {sorted.map((flag, i) => {
-          const config = SEVERITY_CONFIG[flag.severity];
-          const Icon = config.icon;
-          return (
-            <div
-              key={i}
-              className={cn(
-                "rounded-2xl border p-4 transition-colors duration-200 hover:border-white/15",
-                config.chip,
-              )}
-            >
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Icon className="h-4 w-4 shrink-0 opacity-90 mt-0.5" />
-                  <span className="text-sm font-medium text-white/90 leading-snug">
-                    {FLAG_TYPE_LABELS[flag.type] || flag.type}
-                  </span>
+      {redFlags.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: "var(--green-50)", border: "1px solid var(--green-100)" }}>
+            <CheckCircle2 className="h-5 w-5" style={{ color: "var(--green-600)" }} strokeWidth={1.75} />
+          </div>
+          <p className="text-sm font-medium" style={{ color: "var(--green-700)" }}>No red flags</p>
+          <p className="text-xs mt-1" style={{ color: "var(--text-tertiary)" }}>Your resume looks clean</p>
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {sorted.map((flag, i) => {
+            const { icon: Icon, color, bg, border, label } = SEV[flag.severity];
+            return (
+              <div key={i} className="rounded-xl p-3.5 transition-all duration-150 hover:shadow-sm card-lift"
+                style={{ background: bg, border: `1px solid ${border}` }}>
+                <div className="flex items-start gap-2.5">
+                  <Icon className="h-4 w-4 mt-0.5 shrink-0" style={{ color }} strokeWidth={1.75} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>{flag.type.replace(/_/g, " ")}</span>
+                      <span className="badge" style={{ background: "white", color, border: `1px solid ${border}`, fontSize: "10px" }}>{label}</span>
+                    </div>
+                    <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>{flag.description}</p>
+                    {flag.location && <p className="text-[11px] mt-1.5 italic" style={{ color: "var(--text-tertiary)" }}>{flag.location}</p>}
+                  </div>
                 </div>
-                <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border border-white/10 bg-black/20 text-white/60 shrink-0">
-                  {config.label}
-                </span>
               </div>
-              <p className="text-sm text-white/65 leading-relaxed pl-6">{flag.description}</p>
-              {flag.location && (
-                <p className="text-xs text-white/35 mt-2 pl-6">Location: {flag.location}</p>
-              )}
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

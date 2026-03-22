@@ -1,0 +1,10 @@
+.env
+venv/
+venv312/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+test_connections.py
+create_db.py
