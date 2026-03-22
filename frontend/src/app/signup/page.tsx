@@ -1,51 +1,52 @@
+"use client";
+
 import Link from "next/link";
-import { Sparkles, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Target, ArrowLeft, CheckCircle2 } from "lucide-react";
 
 export default function SignupPage() {
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-4 py-16">
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.35),transparent)]"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_70%,rgba(56,189,248,0.07),transparent_50%)]"
-        aria-hidden
-      />
-
-      <div className="relative z-10 w-full max-w-[420px]">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04]">
-            <Sparkles className="h-6 w-6 text-violet-300" strokeWidth={1.5} />
+    <div className="min-h-screen flex items-center justify-center px-5 py-12" style={{ background: "var(--bg)" }}>
+      <div className="w-full max-w-[380px]">
+        {/* Logo */}
+        <div className="flex items-center gap-2.5 mb-8">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: "var(--indigo-600)" }}>
+            <Target className="h-4 w-4 text-white" strokeWidth={2.5} />
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white">Join Fitra</h1>
-          <p className="mt-2 text-sm text-white/55">University pilot &amp; early access</p>
+          <span className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>Fitra</span>
         </div>
 
-        <Card className="border-white/[0.1] bg-zinc-950/40">
-          <CardHeader>
-            <CardTitle className="text-lg font-medium">How access works</CardTitle>
-            <CardDescription className="text-white/50 leading-relaxed">
-              Fitra is rolling out with partner schools. Your admin provisions email login, or you can
-              use Google when enabled for your domain.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="text-sm text-white/60 space-y-2 list-disc list-inside marker:text-violet-400/80">
-              <li>Ask your career center for pilot credentials (email + password).</li>
-              <li>If Google is enabled, sign in with your school account on the login page.</li>
-              <li>Self-serve signup will open as we expand the beta.</li>
-            </ul>
-            <Button variant="secondary" className="w-full" asChild>
-              <Link href="/login" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to sign in
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="mb-6">
+          <h1 className="text-xl font-bold mb-1" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>Join Fitra</h1>
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>University pilot & early access</p>
+        </div>
+
+        <div className="card-lg p-6 mb-5">
+          <h3 className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>How access works</h3>
+          <p className="text-sm leading-relaxed mb-4" style={{ color: "var(--text-secondary)" }}>
+            Fitra is rolling out through partner universities. Your admin provisions credentials, or you can use Google when enabled for your domain.
+          </p>
+          <div className="space-y-2.5">
+            {[
+              "Ask your career center for pilot credentials.",
+              "Use Google sign-in if enabled for your school.",
+              "Self-serve signup opens during beta expansion.",
+            ].map((item, i) => (
+              <div key={i} className="flex items-start gap-2.5">
+                <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" style={{ color: "var(--indigo-500)" }} strokeWidth={2} />
+                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{item}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <Link
+          href="/login"
+          className="btn-secondary w-full justify-center group"
+          style={{ padding: "10px 20px", borderRadius: "12px", fontSize: "14px" }}
+        >
+          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+          Back to sign in
+        </Link>
       </div>
     </div>
   );

@@ -1,93 +1,107 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Sparkles, LogOut, Settings } from "lucide-react";
+import { Target, LogOut, Bell, Plus } from "lucide-react";
 
 interface DashboardHeaderProps {
+  title?: string;
+  subtitle?: string;
   onNewAnalysis?: () => void;
 }
 
-function initials(name: string | null | undefined, email: string | null | undefined) {
+function initials(name?: string | null, email?: string | null) {
   if (name) {
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return name.slice(0, 2).toUpperCase();
+    const p = name.trim().split(/\s+/);
+    return p.length >= 2 ? (p[0][0] + p[1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
   }
-  if (email) return email.slice(0, 2).toUpperCase();
-  return "U";
+  return email?.slice(0, 2).toUpperCase() ?? "U";
 }
 
-export default function DashboardHeader({ onNewAnalysis }: DashboardHeaderProps) {
+export default function DashboardHeader({ title, subtitle, onNewAnalysis }: DashboardHeaderProps) {
   const { data: session } = useSession();
   const user = session?.user;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[var(--background)]/75 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] shadow-lg shadow-violet-500/5">
-            <Sparkles className="h-4 w-4 text-violet-300" strokeWidth={1.75} />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-sm font-semibold tracking-tight text-white truncate">Fitra</h1>
-            <p className="text-[11px] text-white/45 truncate hidden sm:block">
-              Application copilot for students
-            </p>
-          </div>
+    <header
+      className="sticky top-0 z-40 flex items-center justify-between gap-4 px-6 lg:px-8 h-[60px] border-b shrink-0"
+      style={{
+        background: "rgba(255,255,255,0.88)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        borderColor: "var(--border)",
+      }}
+    >
+      {/* Mobile logo */}
+      <div className="flex items-center gap-2.5 lg:hidden">
+        <div
+          className="flex h-7 w-7 items-center justify-center rounded-lg"
+          style={{ background: "var(--indigo-600)" }}
+        >
+          <Target className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
         </div>
+        <span className="font-semibold text-[15px]" style={{ color: "var(--text-primary)" }}>Fitra</span>
+      </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          {onNewAnalysis && (
-            <Button variant="secondary" size="sm" className="hidden sm:inline-flex" onClick={onNewAnalysis}>
-              New analysis
-            </Button>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+      {/* Page title — desktop */}
+      {title && (
+        <div className="hidden lg:block">
+          <h1 className="text-[15px] font-semibold" style={{ color: "var(--text-primary)" }}>{title}</h1>
+          {subtitle && <p className="text-xs mt-0.5" style={{ color: "var(--text-tertiary)" }}>{subtitle}</p>}
+        </div>
+      )}
+
+      {/* Right actions */}
+      <div className="flex items-center gap-2 ml-auto">
+        {onNewAnalysis && (
+          <button type="button" onClick={onNewAnalysis} className="btn-primary text-sm py-1.5 px-3 hidden sm:flex">
+            <Plus className="h-3.5 w-3.5" />
+            New analysis
+          </button>
+        )}
+
+        {/* Avatar dropdown */}
+        <div className="relative group">
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-all"
+            style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}
+          >
+            <div
+              className="flex h-6 w-6 items-center justify-center rounded-lg text-[11px] font-semibold text-white shrink-0"
+              style={{ background: "var(--indigo-600)" }}
+            >
+              {initials(user?.name, user?.email)}
+            </div>
+            <span className="hidden sm:block text-xs font-medium max-w-[100px] truncate" style={{ color: "var(--text-secondary)" }}>
+              {user?.name || user?.email}
+            </span>
+          </button>
+          {/* Dropdown */}
+          <div
+            className="absolute right-0 top-full mt-1.5 w-44 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50"
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: "12px",
+              boxShadow: "var(--shadow-lg)",
+            }}
+          >
+            <div className="p-1">
+              <div className="px-3 py-2 border-b mb-1" style={{ borderColor: "var(--border)" }}>
+                <p className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>{user?.name}</p>
+                <p className="text-[11px] truncate" style={{ color: "var(--text-tertiary)" }}>{user?.email}</p>
+              </div>
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] py-1 pl-1 pr-2.5 text-left transition-all hover:bg-white/[0.07] hover:border-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-              >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-violet-500/80 to-cyan-500/50 text-xs font-semibold text-white shadow-inner">
-                  {initials(user?.name, user?.email)}
-                </span>
-                <span className="hidden sm:block max-w-[140px] truncate text-xs text-white/70">
-                  {user?.name || user?.email || "Account"}
-                </span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 border-white/10 bg-zinc-950/95 backdrop-blur-xl">
-              <DropdownMenuLabel className="font-normal">
-                <p className="text-sm font-medium text-white truncate">{user?.name || "Signed in"}</p>
-                <p className="text-xs text-white/45 truncate">{user?.email}</p>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem
-                className="gap-2 text-white/80 focus:bg-white/10 focus:text-white cursor-pointer"
-                disabled
-              >
-                <Settings className="h-4 w-4" />
-                Settings
-                <span className="ml-auto text-[10px] text-white/35">Soon</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="gap-2 text-white/80 focus:bg-white/10 focus:text-white cursor-pointer"
                 onClick={() => signOut({ callbackUrl: "/login" })}
+                className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all hover:bg-[var(--bg-subtle)]"
+                style={{ color: "var(--red-600)" }}
               >
-                <LogOut className="h-4 w-4" />
-                Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <LogOut className="h-3.5 w-3.5" />
+                Sign out
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </header>
