@@ -138,7 +138,7 @@ function LoginForm() {
                 <input
                   type="email" autoComplete="email" required placeholder="you@university.edu"
                   value={email} onChange={e => setEmail(e.target.value)} disabled={loading !== null}
-                  className="input-base pl-10" style={{ borderRadius: "12px" }}
+                  className="input-base" style={{ borderRadius: "12px", paddingLeft: "2.5rem" }}
                 />
               </div>
             </div>
@@ -149,7 +149,7 @@ function LoginForm() {
                 <input
                   type="password" autoComplete="current-password" required placeholder="••••••••"
                   value={password} onChange={e => setPassword(e.target.value)} disabled={loading !== null}
-                  className="input-base pl-10" style={{ borderRadius: "12px" }}
+                  className="input-base" style={{ borderRadius: "12px", paddingLeft: "2.5rem" }}
                 />
               </div>
             </div>
