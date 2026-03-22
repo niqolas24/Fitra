@@ -2,6 +2,8 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 const providers = [];
 
 if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
@@ -25,23 +27,26 @@ providers.push(
       const password = String(credentials?.password ?? "");
       if (!email || !password) return null;
 
-      const allowedEmail = process.env.AUTH_EMAIL;
-      const hash = process.env.AUTH_PASSWORD_HASH;
-      if (!allowedEmail || !hash) {
-        return null;
-      }
-      if (email.toLowerCase() !== allowedEmail.toLowerCase()) {
-        return null;
-      }
-      const { default: bcrypt } = await import("bcryptjs");
-      const valid = await bcrypt.compare(password, hash);
-      if (!valid) return null;
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
 
-      return {
-        id: email,
-        email,
-        name: email.split("@")[0]?.replace(/[._]/g, " ") ?? "Student",
-      };
+        if (!res.ok) return null;
+
+        const data = await res.json();
+        if (!data.success || !data.user_id) return null;
+
+        return {
+          id: data.user_id,
+          email: data.email,
+          name: data.email.split("@")[0]?.replace(/[._]/g, " ") ?? "Student",
+        };
+      } catch {
+        return null;
+      }
     },
   }),
 );
